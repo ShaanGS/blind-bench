@@ -33,7 +33,7 @@ export function measureCsv(csv) {
   };
 }
 
-export async function auditRun(run, csv, hash) {
+export async function auditRun(run, csv, hash, receiptText = null) {
   const id = run.run;
   const measurements = measureCsv(csv);
   const messages = run.messages;
@@ -69,7 +69,8 @@ export async function auditRun(run, csv, hash) {
   stage("Approve the measurement", "Operator", "@bb-bench run " + id, true);
   const capture = stage("Attach scope and samples", "Bench agent", "Simulated scope capture and raw samples [" + id + "]");
   requireCheck(capture.attachments.length === 2 &&
-    messages.filter((post) => post.attachments.length).length === 1, "Unexpected scope attachments");
+    messages.filter((post) => post.attachments.length).length === (run.receipt ? 2 : 1),
+  "Unexpected attachments in the decision thread");
   const result = stage("Reveal the fixture", "Bench agent",
     "@bb-design Scope result [" + id + "] — " + run.ripple_mvpp + " mVpp (simulated).");
   const committed = /Fixture commitment: \x60([0-9a-f]{64})\x60/.exec(baseline.body);
@@ -85,9 +86,32 @@ export async function auditRun(run, csv, hash) {
     stage("Block release", "Design agent", "Release blocked [" + id + "]");
   }
   stage("Confirm " + decision, "Operator", "@bb-design decide " + id + " " + run.decision, true);
-  stage("Record " + decision, "Design agent", "Decision recorded [" + id + "] — **" + decision + "**");
+  const recorded = stage("Record " + decision, "Design agent",
+    "Decision recorded [" + id + "] — **" + decision + "**");
   stage("Repeat measurement", "Operator", "@bb-bench run " + id, true);
   stage("Block repeat", "Bench agent", "Test blocked [" + id + "]");
+  if (run.receipt) {
+    requireCheck(run.receipt === id + "-decision.json" && recorded.attachments.length === 1 && receiptText,
+      "Decision receipt missing from the recorded post");
+    const receipt = JSON.parse(receiptText);
+    requireCheck(receipt.version === 1 && receipt.run === id && receipt.simulated === true &&
+      receipt.decision === run.decision, "Decision receipt disagrees with the thread");
+    const scope = receipt.scope;
+    const samplesHash = await hash(csv);
+    requireCheck(scope.dc_v === run.dc_v && scope.load_a === 2 &&
+      scope.ripple_mvpp === run.ripple_mvpp && scope.limit_mvpp_exclusive === LIMIT_MVPP &&
+      scope.samples_sha256 === samplesHash && result.body.includes("Samples SHA-256: " + samplesHash),
+    "Decision receipt does not match the scope samples");
+    const eventRefs = receipt.switch;
+    const refs = ["room", "thread", "scope_approval", "bench_result", "operator_decision"]
+      .map((name) => eventRefs[name]);
+    requireCheck(refs.every((ref) => typeof ref === "string" && /^\S+$/.test(ref)) &&
+      new Set(refs).size === refs.length &&
+      result.body.includes("Switch scope approval: " + eventRefs.scope_approval),
+    "Decision receipt is missing Switch event references");
+    stage("Repeat decision", "Operator", "@bb-design decide " + id + " " + run.decision, true);
+    stage("Block duplicate decision", "Design agent", "Decision blocked [" + id + "]");
+  }
   requireCheck(stages.length === messages.length, "Unexpected messages in the recorded review");
   return { ...measurements, stages, commitment: committed[1], nonce: revealed[2] };
 }

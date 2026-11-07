@@ -1,0 +1,7 @@
+{
+  "name": "blind-bench",
+  "private": true,
+  "scripts": {
+    "judge-check": "node --test review/audit.test.mjs && node review/build.mjs --check"
+  }
+}

@@ -2,6 +2,7 @@
 
 import argparse
 import csv
+from hashlib import sha256
 import io
 import json
 from pathlib import Path
@@ -38,6 +39,10 @@ def rehearse(args):
             response = client.get(f"/api/v4/posts/{root}/thread").raise_for_status().json()
             return sorted(response["posts"].values(), key=lambda entry: entry["create_at"])
 
+        def download(file_id):
+            info = client.get(f"/api/v4/files/{file_id}/info").raise_for_status().json()
+            return info["name"], client.get(f"/api/v4/files/{file_id}").raise_for_status().content
+
         def wait(root, text):
             deadline = time.monotonic() + 110
             while time.monotonic() < deadline:
@@ -70,9 +75,7 @@ def rehearse(args):
             assert len(capture.get("file_ids", [])) == 2
             attachments = {}
             for file_id in capture["file_ids"]:
-                info = client.get(f"/api/v4/files/{file_id}/info").raise_for_status().json()
-                data = client.get(f"/api/v4/files/{file_id}").raise_for_status().content
-                name = info["name"]
+                name, data = download(file_id)
                 assert name in {f"{run_id}-scope.png", f"{run_id}-samples.csv"}
                 attachments[Path(name).suffix] = (name, data)
             assert attachments[".png"][1].startswith(b"\x89PNG\r\n\x1a\n")
@@ -95,19 +98,38 @@ def rehearse(args):
             if board == "noisy":
                 post(f"@bb-design decide {run_id} release", root)
                 wait(root, f"Release blocked [{run_id}]")
+                assert sum(bool(entry.get("file_ids")) for entry in posts(root)) == 1
             post(f"@bb-design decide {run_id} {action}", root)
             decision = wait(root, f"Decision recorded [{run_id}]")
             assert f"**{action.upper()}**" in decision["message"]
+            receipt_ids = decision.get("file_ids", [])
+            assert len(receipt_ids) == 1
+            receipt_name, receipt_bytes = download(receipt_ids[0])
+            assert receipt_name == f"{run_id}-decision.json"
+            receipt = json.loads(receipt_bytes)
+            assert receipt["version"] == 1 and receipt["simulated"] is True
+            assert receipt["run"] == run_id and receipt["decision"] == action
+            assert receipt["scope"] == {
+                "dc_v": 4.958, "load_a": 2, "ripple_mvpp": expected,
+                "limit_mvpp_exclusive": 50, "samples_sha256": sha256(attachments[".csv"][1]).hexdigest(),
+            }
+            assert f"Samples SHA-256: {receipt['scope']['samples_sha256']}" in result["message"]
+            assert f"Switch scope approval: {receipt['switch']['scope_approval']}" in result["message"]
+            assert len(set(receipt["switch"].values())) == 5 and all(receipt["switch"].values())
             post(f"@bb-bench run {run_id}", root)
             wait(root, f"Test blocked [{run_id}]")
-            assert sum(bool(entry.get("file_ids")) for entry in posts(root)) == 1
+            post(f"@bb-design decide {run_id} {action}", root)
+            wait(root, f"Decision blocked [{run_id}]")
+            assert sum(bool(entry.get("file_ids")) for entry in posts(root)) == 2
 
             for name, data in attachments.values():
                 (args.evidence / name).write_bytes(data)
+            (args.evidence / receipt_name).write_bytes(receipt_bytes)
             records.append({
                 "run": run_id, "fixture": board, "dc_v": 4.958, "ripple_mvpp": expected,
                 "decision": action, "mattermost_thread": link, "wrong_thread_blocked": True,
                 "duplicate_measurement_blocked": True, "release_blocked": board == "noisy",
+                "receipt": receipt_name, "duplicate_decision_blocked": True,
                 "messages": [
                     {"id": entry["id"], "root_id": entry["root_id"], "body": entry["message"],
                      "attachments": entry.get("file_ids", []), "posted_at_ms": entry["create_at"],

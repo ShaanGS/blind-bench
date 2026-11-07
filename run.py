@@ -2,6 +2,7 @@
 
 import argparse
 import asyncio
+from hashlib import sha256
 import json
 import os
 from pathlib import Path
@@ -19,6 +20,8 @@ LIMIT = 50.0
 BASELINE = re.compile(rf"Baseline \[({RUN_ID})\] — 4\.958 V DC at 2 A\. \(Simulated\)")
 PLAN = re.compile(rf"Test plan \[({RUN_ID})\] — (scope_ripple|repeat_dc)")
 RESULT = re.compile(rf"Scope result \[({RUN_ID})\] — (\d+(?:\.\d+)?) mVpp \(simulated\)\.")
+SAMPLES_HASH = re.compile(r"^Samples SHA-256: ([0-9a-f]{64})$", re.MULTILINE)
+APPROVAL_EVENT = re.compile(r"^Switch scope approval: (\S+)$", re.MULTILINE)
 
 
 def test_choice():
@@ -61,22 +64,22 @@ class Workflow:
         thread = message.get("thread_id") or message["message_id"]
         body = re.sub(r"^@\S+\s+", "", message["body"].strip(), count=1)
         if sender == self.operator:
-            await self.operator_message(thread, body)
+            await self.operator_message(thread, body, message["message_id"])
         elif self.role == BENCH:
             await self.bench_handoff(thread, body)
         else:
-            await self.design_handoff(thread, body)
+            await self.design_handoff(thread, body, message["message_id"])
 
-    async def operator_message(self, thread, body):
+    async def operator_message(self, thread, body, event_id):
         start = re.fullmatch(rf"start ({RUN_ID})", body)
         run = re.fullmatch(rf"run ({RUN_ID})", body)
         decide = re.fullmatch(rf"decide ({RUN_ID}) (hold|release)", body)
         if self.role == BENCH and start:
             await self.start(thread, start[1])
         elif self.role == BENCH and run:
-            await self.measure(thread, run[1])
+            await self.measure(thread, run[1], event_id)
         elif self.role == DESIGN and decide:
-            await self.decide(thread, decide[1], decide[2])
+            await self.decide(thread, decide[1], decide[2], event_id)
 
     async def start(self, thread, run_id):
         from fixture import commitment
@@ -114,7 +117,7 @@ class Workflow:
             thread, f"**Waiting for operator approval.** Reply in this thread with `@{BENCH} run {run_id}`."
         )
 
-    async def measure(self, thread, run_id):
+    async def measure(self, thread, run_id, approval_event):
         from fixture import scope
 
         state = self.runs.get(run_id)
@@ -122,17 +125,20 @@ class Workflow:
             await self.switch.say(thread, f"Test blocked [{run_id}] — approve from the run thread after the plan appears.")
             return
         ripple, files = await asyncio.to_thread(scope, run_id, state["board"])
+        samples = next(data for _, data, mime in files if mime == "text/csv")
         await self.switch.attach(thread, f"Simulated scope capture and raw samples [{run_id}]", files)
         state["stage"] = "measured"
         await self.switch.say(
             thread,
             f"Scope result [{run_id}] — {ripple:g} mVpp (simulated).\n"
             f"Fixture reveal: `{state['board']}` · nonce `{state['nonce']}`. "
-            "The capture and raw samples are attached above.",
+            "The capture and raw samples are attached above.\n"
+            f"Samples SHA-256: {sha256(samples).hexdigest()}\n"
+            f"Switch scope approval: {approval_event}",
             DESIGN,
         )
 
-    async def design_handoff(self, thread, body):
+    async def design_handoff(self, thread, body, event_id):
         baseline = BASELINE.match(body)
         if baseline:
             run_id = baseline[1]
@@ -154,9 +160,15 @@ class Workflow:
         state = self.runs.get(run_id)
         if not state or state["thread"] != thread or state["stage"] != "scope_ripple":
             return
+        digest = SAMPLES_HASH.search(body)
+        approval = APPROVAL_EVENT.search(body)
+        if not digest or not approval:
+            await self.switch.say(thread, f"Evidence incomplete [{run_id}] — missing sample hash or scope approval.")
+            return
         ripple = float(measurement)
         action = "release" if ripple < LIMIT else "hold"
-        state.update(stage="review", action=action, ripple=ripple)
+        state.update(stage="review", action=action, ripple=ripple, samples_hash=digest[1],
+                     approval_event=approval[1], result_event=event_id)
         comparison = "below" if action == "release" else "at or above"
         await self.switch.say(
             thread,
@@ -165,7 +177,7 @@ class Workflow:
             f"Operator, record your decision here with `@{DESIGN} decide {run_id} {action}`.",
         )
 
-    async def decide(self, thread, run_id, action):
+    async def decide(self, thread, run_id, action, event_id):
         state = self.runs.get(run_id)
         if not state or state["thread"] != thread or state["stage"] != "review":
             await self.switch.say(thread, f"Decision blocked [{run_id}] — no open recommendation in this thread.")
@@ -173,11 +185,33 @@ class Workflow:
         if action == "release" and state["action"] == "hold":
             await self.switch.say(thread, f"Release blocked [{run_id}] — the board failed the ripple limit.")
             return
-        state["stage"] = "closed"
-        await self.switch.say(
+        receipt = {
+            "version": 1,
+            "run": run_id,
+            "decision": action,
+            "simulated": True,
+            "scope": {
+                "dc_v": 4.958,
+                "load_a": 2,
+                "ripple_mvpp": state["ripple"],
+                "limit_mvpp_exclusive": LIMIT,
+                "samples_sha256": state["samples_hash"],
+            },
+            "switch": {
+                "room": self.switch.room,
+                "thread": thread,
+                "scope_approval": state["approval_event"],
+                "bench_result": state["result_event"],
+                "operator_decision": event_id,
+            },
+        }
+        document = (json.dumps(receipt, indent=2) + "\n").encode("utf-8")
+        await self.switch.attach(
             thread, f"Decision recorded [{run_id}] — **{action.upper()}** by the operator.\n"
             f"Simulated evidence: 4.958 V DC · {state['ripple']:g} mVpp · limit < {LIMIT:g} mVpp.",
+            [(f"{run_id}-decision.json", document, "application/json")],
         )
+        state["stage"] = "closed"
 
 
 def main():

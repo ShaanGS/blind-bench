@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "run": "board-3bcb9e",
+  "decision": "hold",
+  "simulated": true,
+  "scope": {
+    "dc_v": 4.958,
+    "load_a": 2,
+    "ripple_mvpp": 132.0,
+    "limit_mvpp_exclusive": 50.0,
+    "samples_sha256": "cb2c4d45d44250eea7468f29943ffa2bbcde3f2337a36d8b0ecbb8e6d9cc8dd1"
+  },
+  "switch": {
+    "room": "382e5dd1-b7ef-429a-b2c5-047c6f20764f",
+    "thread": "sw_994c1a0f57a264f7e6dfe5b46c225ef8",
+    "scope_approval": "sw_a22709ec39b28e2aee7d46e5625e739a",
+    "bench_result": "sw_a186d523e897431f94d3d4432632dd2c",
+    "operator_decision": "sw_b8ffacb0edba1d64ce4f6cf711109f05"
+  }
+}

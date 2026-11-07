@@ -17,9 +17,11 @@ const packet = [];
 const reports = [];
 for (const run of runs) {
   if (!/^[a-z0-9-]{1,32}$/.test(run.run)) throw new Error("Invalid run ID");
-  const csv = normalize(await read("../evidence/" + run.run + "-samples.csv"));
-  const report = await auditRun(run, csv, (value) => createHash("sha256").update(value).digest("hex"));
-  packet.push({ run, csv });
+  const csv = await read("../evidence/" + run.run + "-samples.csv");
+  if (run.receipt && run.receipt !== run.run + "-decision.json") throw new Error("Invalid receipt filename");
+  const receipt = run.receipt ? await read("../evidence/" + run.receipt) : null;
+  const report = await auditRun(run, csv, (value) => createHash("sha256").update(value).digest("hex"), receipt);
+  packet.push({ run, csv, receipt });
   reports.push(report);
   console.log(run.run + "  " + report.dc.toFixed(3) + " V  " + report.ripple + " mVpp  " + report.decision.toUpperCase());
 }

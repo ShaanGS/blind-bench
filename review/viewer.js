@@ -27,7 +27,7 @@ function renderScope() {
 }
 
 function renderThread() {
-  const { run, csv } = packetData[activeBoard];
+  const { run, csv, receipt } = packetData[activeBoard];
   const report = verifiedReports[activeBoard];
   [...get("boards").children].forEach((button, index) => {
     button.setAttribute("aria-pressed", String(index === activeBoard));
@@ -55,11 +55,18 @@ function renderThread() {
       ? "Release attempt was blocked before the operator recorded HOLD."
       : "The operator recorded RELEASE after the scope result.",
     "Repeat measurement was blocked in the recorded thread.",
+    ...(receipt ? ["Decision receipt matches the CSV hash and records Switch event IDs."] : []),
   ].map((check) => element("li", "", check)));
   const download = get("download");
   download.href = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
   download.download = run.run + "-samples.csv";
   download.hidden = false;
+  const receiptLink = get("receipt");
+  receiptLink.hidden = !receipt;
+  if (receipt) {
+    receiptLink.href = "data:application/json;charset=utf-8," + encodeURIComponent(receipt);
+    receiptLink.download = run.receipt;
+  }
 }
 
 async function verify() {
@@ -69,7 +76,7 @@ async function verify() {
   status.className = "status mono";
   status.textContent = "Checking the embedded evidence…";
   try {
-    verifiedReports = await Promise.all(packetData.map(({ run, csv }) => auditRun(run, csv, sha256)));
+    verifiedReports = await Promise.all(packetData.map(({ run, csv, receipt }) => auditRun(run, csv, sha256, receipt)));
     get("lead").textContent = "Both read " + verifiedReports[0].dc.toFixed(3) +
       " V DC. One fails the ripple limit. Compare the scope traces and inspect what happened in chat.";
     if (!get("boards").children.length) {

@@ -11,10 +11,12 @@ const release = runs.find((run) => run.decision === "release");
 const hold = runs.find((run) => run.decision === "hold");
 const releaseCsv = await read(release.run + "-samples.csv");
 const holdCsv = await read(hold.run + "-samples.csv");
+const releaseReceipt = release.receipt ? await read(release.receipt) : null;
+const holdReceipt = hold.receipt ? await read(hold.receipt) : null;
 
 test("audits both recorded Switch runs from their actual samples", async () => {
-  const a = await auditRun(release, releaseCsv, hash);
-  const b = await auditRun(hold, holdCsv, hash);
+  const a = await auditRun(release, releaseCsv, hash, releaseReceipt);
+  const b = await auditRun(hold, holdCsv, hash, holdReceipt);
   assert.equal(a.dc, b.dc);
   assert.equal(a.ripple, 39.6);
   assert.equal(b.ripple, 132);
@@ -42,6 +44,13 @@ test("rejects a mismatched fixture reveal", async () => {
 
 test("rejects a release verdict for the failing waveform", async () => {
   await assert.rejects(auditRun({ ...hold, decision: "release" }, holdCsv, hash), /release limits/);
+});
+
+test("rejects a CSV whose bytes changed while its measurements stayed the same", async () => {
+  assert.ok(releaseReceipt, "The recorded release must include a decision receipt");
+  const edited = releaseCsv.replace(/\r?\n/, (newline) => newline === "\r\n" ? "\n" : "\r\n");
+  assert.equal(measureCsv(edited).ripple, measureCsv(releaseCsv).ripple);
+  await assert.rejects(auditRun(release, edited, hash, releaseReceipt), /receipt does not match/);
 });
 
 test("the 50 mVpp limit is strict at the boundary", () => {
