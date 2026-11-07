@@ -1,0 +1,242 @@
+[
+  {
+    "run": "board-efe204",
+    "fixture": "clean",
+    "dc_v": 4.958,
+    "ripple_mvpp": 39.6,
+    "decision": "release",
+    "mattermost_thread": "http://localhost:8065/_redirect/pl/96ag3qzpn7rt88k8ithgnxq6to",
+    "wrong_thread_blocked": true,
+    "duplicate_measurement_blocked": true,
+    "release_blocked": false,
+    "messages": [
+      {
+        "id": "96ag3qzpn7rt88k8ithgnxq6to",
+        "root_id": "",
+        "body": "@bb-bench start board-efe204",
+        "attachments": [],
+        "posted_at_ms": 1794066340295,
+        "author": "operator"
+      },
+      {
+        "id": "fhgronk8i3bh7k7h861q1bcxoo",
+        "root_id": "96ag3qzpn7rt88k8ithgnxq6to",
+        "body": "@bb-design Baseline [board-efe204] — 4.958 V DC at 2 A. (Simulated)\nDC window: 4.90–5.10 V. Ripple limit: < 50 mVpp.\nFixture commitment: `190ceb8882af7f29357688ea8c2b707f418f60c9e9d53d2e17b50f39b7053ed1`. Which test would you run?",
+        "attachments": [],
+        "posted_at_ms": 1794066342068,
+        "author": "Switch bridge"
+      },
+      {
+        "id": "rp8icxtezbbtbjw3kf8z35n6da",
+        "root_id": "96ag3qzpn7rt88k8ithgnxq6to",
+        "body": "@bb-bench Test plan [board-efe204] — scope_ripple\nDC reading is already in spec at 4.958 V, so the open question is the 50 mV peak-to-peak ripple limit, which only a scope measurement can check.",
+        "attachments": [],
+        "posted_at_ms": 1794066346901,
+        "author": "Switch bridge"
+      },
+      {
+        "id": "mx8nonnphi8bpb4n6ozicpqubr",
+        "root_id": "96ag3qzpn7rt88k8ithgnxq6to",
+        "body": "**Waiting for operator approval.** Reply in this thread with `@bb-bench run board-efe204`.",
+        "attachments": [],
+        "posted_at_ms": 1794066347491,
+        "author": "Switch bridge"
+      },
+      {
+        "id": "c891nwkg6pgeuk7km9t3u3z49a",
+        "root_id": "96ag3qzpn7rt88k8ithgnxq6to",
+        "body": "@bb-bench run board-efe204",
+        "attachments": [],
+        "posted_at_ms": 1794066349922,
+        "author": "operator"
+      },
+      {
+        "id": "x3j8yt1y4pdq8pqaxpoaxm3fkw",
+        "root_id": "96ag3qzpn7rt88k8ithgnxq6to",
+        "body": "Simulated scope capture and raw samples [board-efe204]",
+        "attachments": [
+          "jf9r1x7idtn9bfaf3i6z67oxua",
+          "rx1odpuk9pbn5xqb6zciru34me"
+        ],
+        "posted_at_ms": 1794066352941,
+        "author": "Switch bridge"
+      },
+      {
+        "id": "hhj8m7s39p8cicxca6s5profuh",
+        "root_id": "96ag3qzpn7rt88k8ithgnxq6to",
+        "body": "@bb-design Scope result [board-efe204] — 39.6 mVpp (simulated).\nFixture reveal: `clean` · nonce `efc907b591972b5474bfcf2c2f15ce93`. The capture and raw samples are attached above.",
+        "attachments": [],
+        "posted_at_ms": 1794066353395,
+        "author": "Switch bridge"
+      },
+      {
+        "id": "ebc3w7saitr57p9p5a5mcfo1ua",
+        "root_id": "96ag3qzpn7rt88k8ithgnxq6to",
+        "body": "Recommendation [board-efe204] — **RELEASE**.\nDC passes at 4.958 V. Ripple is **39.6 mVpp**, below the 50 mVpp limit.\nOperator, record your decision here with `@bb-design decide board-efe204 release`.",
+        "attachments": [],
+        "posted_at_ms": 1794066353772,
+        "author": "Switch bridge"
+      },
+      {
+        "id": "59jgunmccjdqzekrz53dacoy1y",
+        "root_id": "96ag3qzpn7rt88k8ithgnxq6to",
+        "body": "@bb-design decide board-efe204 release",
+        "attachments": [],
+        "posted_at_ms": 1794066354482,
+        "author": "operator"
+      },
+      {
+        "id": "ixr7bexyz38q8y4gqpuceyi6cc",
+        "root_id": "96ag3qzpn7rt88k8ithgnxq6to",
+        "body": "Decision recorded [board-efe204] — **RELEASE** by the operator.\nSimulated evidence: 4.958 V DC · 39.6 mVpp · limit < 50 mVpp.",
+        "attachments": [],
+        "posted_at_ms": 1794066355586,
+        "author": "Switch bridge"
+      },
+      {
+        "id": "g4w7mfbrbprgbcrt51r87n3axc",
+        "root_id": "96ag3qzpn7rt88k8ithgnxq6to",
+        "body": "@bb-bench run board-efe204",
+        "attachments": [],
+        "posted_at_ms": 1794066356365,
+        "author": "operator"
+      },
+      {
+        "id": "54aaescc53yfprcmnuqxndn1wc",
+        "root_id": "96ag3qzpn7rt88k8ithgnxq6to",
+        "body": "Test blocked [board-efe204] — approve from the run thread after the plan appears.",
+        "attachments": [],
+        "posted_at_ms": 1794066357398,
+        "author": "Switch bridge"
+      }
+    ]
+  },
+  {
+    "run": "board-96db35",
+    "fixture": "noisy",
+    "dc_v": 4.958,
+    "ripple_mvpp": 132.0,
+    "decision": "hold",
+    "mattermost_thread": "http://localhost:8065/_redirect/pl/8cmzbzprt7gwdpw3qie3ozbm4r",
+    "wrong_thread_blocked": true,
+    "duplicate_measurement_blocked": true,
+    "release_blocked": true,
+    "messages": [
+      {
+        "id": "8cmzbzprt7gwdpw3qie3ozbm4r",
+        "root_id": "",
+        "body": "@bb-bench start board-96db35",
+        "attachments": [],
+        "posted_at_ms": 1794066358314,
+        "author": "operator"
+      },
+      {
+        "id": "u4td9h6it3gwxpoh3kw6sj9b8a",
+        "root_id": "8cmzbzprt7gwdpw3qie3ozbm4r",
+        "body": "@bb-design Baseline [board-96db35] — 4.958 V DC at 2 A. (Simulated)\nDC window: 4.90–5.10 V. Ripple limit: < 50 mVpp.\nFixture commitment: `01aac1032538084a04b1cc40b1b9799e2d92a977b0b78f56fd97c22fa45ccde6`. Which test would you run?",
+        "attachments": [],
+        "posted_at_ms": 1794066359797,
+        "author": "Switch bridge"
+      },
+      {
+        "id": "y4rkufs8iig59n1bm3hymiz8zh",
+        "root_id": "8cmzbzprt7gwdpw3qie3ozbm4r",
+        "body": "@bb-bench Test plan [board-96db35] — scope_ripple\nDC is already in spec at 4.958 V, so the open question is the 50 mV peak-to-peak ripple limit, which only a scope measurement can answer.",
+        "attachments": [],
+        "posted_at_ms": 1794066364284,
+        "author": "Switch bridge"
+      },
+      {
+        "id": "x7b99d6fe3bzj8kyb7ijzur96a",
+        "root_id": "8cmzbzprt7gwdpw3qie3ozbm4r",
+        "body": "**Waiting for operator approval.** Reply in this thread with `@bb-bench run board-96db35`.",
+        "attachments": [],
+        "posted_at_ms": 1794066364855,
+        "author": "Switch bridge"
+      },
+      {
+        "id": "hcr633pn8jf99ez76ek1nmid5y",
+        "root_id": "8cmzbzprt7gwdpw3qie3ozbm4r",
+        "body": "@bb-bench run board-96db35",
+        "attachments": [],
+        "posted_at_ms": 1794066366951,
+        "author": "operator"
+      },
+      {
+        "id": "qayyekws9fr4ddes49msxm7mkw",
+        "root_id": "8cmzbzprt7gwdpw3qie3ozbm4r",
+        "body": "Simulated scope capture and raw samples [board-96db35]",
+        "attachments": [
+          "789q3iicc3bkze1fakiq7shw5y",
+          "jkb1nf9h8fy35g6sobfk147n6o"
+        ],
+        "posted_at_ms": 1794066369754,
+        "author": "Switch bridge"
+      },
+      {
+        "id": "3bpifrjs3ibt9x8c9h4n4aqdcc",
+        "root_id": "8cmzbzprt7gwdpw3qie3ozbm4r",
+        "body": "@bb-design Scope result [board-96db35] — 132 mVpp (simulated).\nFixture reveal: `noisy` · nonce `b5a7a4f733ce39a64648c84ed557265c`. The capture and raw samples are attached above.",
+        "attachments": [],
+        "posted_at_ms": 1794066370011,
+        "author": "Switch bridge"
+      },
+      {
+        "id": "hwrc1k5zs7f65euyc85btrohnr",
+        "root_id": "8cmzbzprt7gwdpw3qie3ozbm4r",
+        "body": "Recommendation [board-96db35] — **HOLD**.\nDC passes at 4.958 V. Ripple is **132 mVpp**, at or above the 50 mVpp limit.\nOperator, record your decision here with `@bb-design decide board-96db35 hold`.",
+        "attachments": [],
+        "posted_at_ms": 1794066370243,
+        "author": "Switch bridge"
+      },
+      {
+        "id": "w6tydpkxui895k35p1n4qp9tkc",
+        "root_id": "8cmzbzprt7gwdpw3qie3ozbm4r",
+        "body": "@bb-design decide board-96db35 release",
+        "attachments": [],
+        "posted_at_ms": 1794066370687,
+        "author": "operator"
+      },
+      {
+        "id": "aotinc58ijfu3bwimxqtxxcahc",
+        "root_id": "8cmzbzprt7gwdpw3qie3ozbm4r",
+        "body": "Release blocked [board-96db35] — the board failed the ripple limit.",
+        "attachments": [],
+        "posted_at_ms": 1794066371901,
+        "author": "Switch bridge"
+      },
+      {
+        "id": "9zq1qgs4gjymij65ywzgyz5g6h",
+        "root_id": "8cmzbzprt7gwdpw3qie3ozbm4r",
+        "body": "@bb-design decide board-96db35 hold",
+        "attachments": [],
+        "posted_at_ms": 1794066372566,
+        "author": "operator"
+      },
+      {
+        "id": "u9i5t933b7gq7dobqn3hdby9yh",
+        "root_id": "8cmzbzprt7gwdpw3qie3ozbm4r",
+        "body": "Decision recorded [board-96db35] — **HOLD** by the operator.\nSimulated evidence: 4.958 V DC · 132 mVpp · limit < 50 mVpp.",
+        "attachments": [],
+        "posted_at_ms": 1794066373536,
+        "author": "Switch bridge"
+      },
+      {
+        "id": "teyukxfy1fgnbpsmk8k6x6hnpc",
+        "root_id": "8cmzbzprt7gwdpw3qie3ozbm4r",
+        "body": "@bb-bench run board-96db35",
+        "attachments": [],
+        "posted_at_ms": 1794066373583,
+        "author": "operator"
+      },
+      {
+        "id": "ufyo1awwc3dpxx5bjk4re3tjry",
+        "root_id": "8cmzbzprt7gwdpw3qie3ozbm4r",
+        "body": "Test blocked [board-96db35] — approve from the run thread after the plan appears.",
+        "attachments": [],
+        "posted_at_ms": 1794066374673,
+        "author": "Switch bridge"
+      }
+    ]
+  }
+]
