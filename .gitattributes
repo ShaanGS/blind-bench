@@ -1,1 +1,3 @@
+# Preserve the bytes downloaded from Mattermost across Git checkouts.
 evidence/*-samples.csv -text whitespace=cr-at-eol
+evidence/*-decision.json -text
