@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Blind Bench · Evidence Review</title>
+  <style>
+    :root {
+      --page:#0a131b; --panel:#101e28; --border:#2b414f; --text:#f0f5f4; --muted:#a8b9c2;
+      --mint:#83f0c9; --coral:#ff9a7a; --mono:Consolas, "Liberation Mono", monospace;
+      font-family: system-ui, "Segoe UI", sans-serif; color:var(--text); background:var(--page);
+      font-synthesis:none; line-height:1.5;
+    }
+    * { box-sizing:border-box; }
+    body { margin:0; background:radial-gradient(ellipse at 72% -10%,#1b333f 0%,transparent 48%),var(--page); }
+    main { max-width:1320px; margin:auto; padding:0 clamp(18px,5vw,68px); }
+    header { display:flex; justify-content:space-between; align-items:center; gap:18px; padding:23px 0; border-bottom:1px solid var(--border); }
+    .brand { display:flex; align-items:center; gap:10px; font-weight:750; letter-spacing:.04em; }
+    .brand svg { flex:none; }
+    .mono { font-family:var(--mono); font-size:12px; letter-spacing:.065em; }
+    .tag { color:var(--muted); }
+    h1,h2,h3,p { margin:0; }
+    h1 { font-size:clamp(36px,6vw,78px); line-height:1.01; letter-spacing:-.075em; max-width:14ch; margin:16px 0 19px; }
+    h2 { font-size:clamp(21px,3vw,32px); letter-spacing:-.035em; }
+    .lead { color:var(--muted); max-width:36ch; }
+    .eyebrow { color:var(--mint); }
+    .hero { padding:clamp(28px,6vw,70px) 0 36px; display:grid; grid-template-columns:.92fr 1.45fr; gap:clamp(18px,3vw,44px); align-items:center; }
+    .board-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:24px; }
+    button,a,summary { touch-action:manipulation; }
+    button { cursor:pointer; font:inherit; color:inherit; }
+    button:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid var(--mint); outline-offset:3px; }
+    .board { min-width:0; text-align:left; border:1px solid var(--border); border-radius:12px; background:#111f28; padding:14px; }
+    .board[aria-pressed="true"] { border-color:var(--accent); background:#182933; }
+    .board span { display:block; }
+    .board .number { color:var(--accent); font-size:clamp(26px,4vw,40px); line-height:1.15; letter-spacing:-.065em; font-weight:740; font-variant-numeric:tabular-nums; }
+    .board .unit { color:var(--muted); font-size:12px; }
+    .board .verdict { color:var(--accent); margin-top:9px; }
+    .pass { --accent:var(--mint); }
+    .hold { --accent:var(--coral); }
+    .panel { border:1px solid var(--border); background:var(--panel); border-radius:16px; min-width:0; }
+    .plot { padding:clamp(13px,2vw,22px); }
+    .row { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 18px; }
+    .chart { margin:13px -4px 6px; }
+    .chart svg { display:block; width:100%; height:auto; }
+    .legend { display:flex; flex-wrap:wrap; gap:14px; color:var(--muted); font-size:13px; }
+    .dot { display:inline-block; border-radius:100%; width:8px; height:8px; margin-right:6px; background:var(--accent); }
+    .segment { display:flex; flex-wrap:wrap; gap:4px; }
+    .segment button,.recheck { border:1px solid var(--border); background:#0e1a23; color:var(--muted); border-radius:7px; padding:6px 10px; font-size:13px; }
+    .segment button[aria-pressed="true"] { background:#244052; color:var(--text); border-color:#5d7989; }
+    .segment button:hover,.recheck:hover { color:var(--text); }
+    .review { display:grid; grid-template-columns:1.55fr .85fr; align-items:start; gap:18px; padding-bottom:32px; }
+    .timeline,.integrity { padding:clamp(14px,2.4vw,26px); }
+    .panel-heading { margin-bottom:18px; }
+    .source { color:var(--muted); font-size:13px; margin-top:4px; overflow-wrap:anywhere; }
+    .event { border-top:1px solid var(--border); }
+    .event:last-child { border-bottom:1px solid var(--border); }
+    summary { display:grid; grid-template-columns:18px 1fr auto; align-items:baseline; gap:10px; cursor:pointer; padding:12px 0; list-style:none; }
+    summary::-webkit-details-marker { display:none; }
+    summary::before { content:"+"; color:var(--mint); font-family:var(--mono); }
+    details[open] summary::before { content:"−"; }
+    .event-label { display:block; font-weight:620; }
+    .event-actor,.event-time { font-size:12px; color:var(--muted); }
+    .event-time { font-family:var(--mono); }
+    .post { margin:0 0 12px 27px; border-radius:8px; background:#0b161e; padding:11px; white-space:pre-wrap; overflow-wrap:anywhere; font-size:13px; }
+    .post-id { display:block; color:var(--muted); margin-top:9px; font-family:var(--mono); font-size:11px; }
+    .checks { list-style:none; margin:10px 0 20px; padding:0; }
+    .checks li { border-top:1px solid var(--border); padding:10px 0; font-size:14px; }
+    .checks li::before { content:"✓"; margin-right:8px; color:var(--mint); }
+    .status { color:var(--mint); }
+    .status.error { color:var(--coral); }
+    .status[hidden] { display:none; }
+    a { color:var(--mint); text-underline-offset:3px; }
+    code { font-family:var(--mono); }
+    footer { border-top:1px solid var(--border); padding:18px 0 34px; color:var(--muted); font-size:13px; }
+    @media(max-width:850px) { .hero,.review { grid-template-columns:1fr; } .board-grid { max-width:500px; } .integrity { grid-row:1; } }
+    @media(max-width:460px) {
+      header .tag { display:none; }
+      .chart { margin-left:-12px; margin-right:-12px; }
+      .chart svg text { font-size:23px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div class="brand">
+        <svg width="27" height="27" viewBox="0 0 27 27" aria-hidden="true"><rect x="1" y="1" width="25" height="25" rx="5" fill="none" stroke="#83f0c9"/><path d="M5 17h4l3-8 4 10 3-5h3" fill="none" stroke="#83f0c9" stroke-width="1.6"/></svg>
+        BLIND BENCH
+      </div>
+      <span class="tag mono">SWITCH × MATTERMOST / EVIDENCE REVIEW</span>
+    </header>
+    <section class="hero" aria-label="Board comparison">
+      <div>
+        <span class="eyebrow mono">TWO SIMULATED BOARDS / 2 A LOAD</span>
+        <h1>Which board would you ship?</h1>
+        <p class="lead" id="lead">Compare the ripple, then follow the recorded decision in the Switch thread.</p>
+        <div id="boards" class="board-grid" aria-label="Select a rehearsal thread"></div>
+      </div>
+      <div class="panel plot">
+        <div class="row">
+          <h2>Scope comparison</h2>
+          <div class="segment" aria-label="Scope traces">
+            <button type="button" data-scope="both" aria-pressed="true">Overlay</button>
+            <button type="button" data-scope="0" aria-pressed="false">Board A</button>
+            <button type="button" data-scope="1" aria-pressed="false">Board B</button>
+          </div>
+        </div>
+        <div id="scope" class="chart"></div>
+        <div class="legend">
+          <span><i class="dot pass"></i>Board A</span>
+          <span><i class="dot hold"></i>Board B</span>
+          <span>Release limit: ripple below 50 mVpp</span>
+        </div>
+      </div>
+    </section>
+    <div class="review">
+      <section class="panel timeline" aria-labelledby="thread-heading">
+        <div class="panel-heading">
+          <h2 id="thread-heading">Recorded Switch thread</h2>
+          <p id="thread-source" class="source">Choose a board to inspect its messages.</p>
+        </div>
+        <div id="thread"></div>
+      </section>
+      <section class="panel integrity" aria-labelledby="audit-heading">
+        <div class="row">
+          <h2 id="audit-heading">Evidence checks</h2>
+          <button id="verify" type="button" class="recheck">Recheck</button>
+        </div>
+        <p id="status" class="status mono" role="status">Checking the embedded evidence…</p>
+        <ul id="checks" class="checks"></ul>
+        <p><a id="download" download hidden>Download this board’s CSV</a></p>
+        <p class="source">Checks cover the exported rehearsal data. Agent labels follow each message’s role in the workflow.</p>
+      </section>
+    </div>
+    <footer>Recorded in a self-hosted Switch room. Scope samples come from the simulator. The operator account was driven by the rehearsal script. <a href="https://github.com/ShaanGS/blind-bench">Source and setup</a></footer>
+  </main>
+  <noscript>This review uses JavaScript to verify and plot the bundled evidence.</noscript>
+  <script id="evidence" type="application/json"><!-- EVIDENCE --></script>
+  <script type="module">/* REVIEW SCRIPT */</script>
+</body>
+</html>

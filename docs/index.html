@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Blind Bench · Evidence Review</title>
+  <style>
+    :root {
+      --page:#0a131b; --panel:#101e28; --border:#2b414f; --text:#f0f5f4; --muted:#a8b9c2;
+      --mint:#83f0c9; --coral:#ff9a7a; --mono:Consolas, "Liberation Mono", monospace;
+      font-family: system-ui, "Segoe UI", sans-serif; color:var(--text); background:var(--page);
+      font-synthesis:none; line-height:1.5;
+    }
+    * { box-sizing:border-box; }
+    body { margin:0; background:radial-gradient(ellipse at 72% -10%,#1b333f 0%,transparent 48%),var(--page); }
+    main { max-width:1320px; margin:auto; padding:0 clamp(18px,5vw,68px); }
+    header { display:flex; justify-content:space-between; align-items:center; gap:18px; padding:23px 0; border-bottom:1px solid var(--border); }
+    .brand { display:flex; align-items:center; gap:10px; font-weight:750; letter-spacing:.04em; }
+    .brand svg { flex:none; }
+    .mono { font-family:var(--mono); font-size:12px; letter-spacing:.065em; }
+    .tag { color:var(--muted); }
+    h1,h2,h3,p { margin:0; }
+    h1 { font-size:clamp(36px,6vw,78px); line-height:1.01; letter-spacing:-.075em; max-width:14ch; margin:16px 0 19px; }
+    h2 { font-size:clamp(21px,3vw,32px); letter-spacing:-.035em; }
+    .lead { color:var(--muted); max-width:36ch; }
+    .eyebrow { color:var(--mint); }
+    .hero { padding:clamp(28px,6vw,70px) 0 36px; display:grid; grid-template-columns:.92fr 1.45fr; gap:clamp(18px,3vw,44px); align-items:center; }
+    .board-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-top:24px; }
+    button,a,summary { touch-action:manipulation; }
+    button { cursor:pointer; font:inherit; color:inherit; }
+    button:focus-visible, a:focus-visible, summary:focus-visible { outline:2px solid var(--mint); outline-offset:3px; }
+    .board { min-width:0; text-align:left; border:1px solid var(--border); border-radius:12px; background:#111f28; padding:14px; }
+    .board[aria-pressed="true"] { border-color:var(--accent); background:#182933; }
+    .board span { display:block; }
+    .board .number { color:var(--accent); font-size:clamp(26px,4vw,40px); line-height:1.15; letter-spacing:-.065em; font-weight:740; font-variant-numeric:tabular-nums; }
+    .board .unit { color:var(--muted); font-size:12px; }
+    .board .verdict { color:var(--accent); margin-top:9px; }
+    .pass { --accent:var(--mint); }
+    .hold { --accent:var(--coral); }
+    .panel { border:1px solid var(--border); background:var(--panel); border-radius:16px; min-width:0; }
+    .plot { padding:clamp(13px,2vw,22px); }
+    .row { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 18px; }
+    .chart { margin:13px -4px 6px; }
+    .chart svg { display:block; width:100%; height:auto; }
+    .legend { display:flex; flex-wrap:wrap; gap:14px; color:var(--muted); font-size:13px; }
+    .dot { display:inline-block; border-radius:100%; width:8px; height:8px; margin-right:6px; background:var(--accent); }
+    .segment { display:flex; flex-wrap:wrap; gap:4px; }
+    .segment button,.recheck { border:1px solid var(--border); background:#0e1a23; color:var(--muted); border-radius:7px; padding:6px 10px; font-size:13px; }
+    .segment button[aria-pressed="true"] { background:#244052; color:var(--text); border-color:#5d7989; }
+    .segment button:hover,.recheck:hover { color:var(--text); }
+    .review { display:grid; grid-template-columns:1.55fr .85fr; align-items:start; gap:18px; padding-bottom:32px; }
+    .timeline,.integrity { padding:clamp(14px,2.4vw,26px); }
+    .panel-heading { margin-bottom:18px; }
+    .source { color:var(--muted); font-size:13px; margin-top:4px; overflow-wrap:anywhere; }
+    .event { border-top:1px solid var(--border); }
+    .event:last-child { border-bottom:1px solid var(--border); }
+    summary { display:grid; grid-template-columns:18px 1fr auto; align-items:baseline; gap:10px; cursor:pointer; padding:12px 0; list-style:none; }
+    summary::-webkit-details-marker { display:none; }
+    summary::before { content:"+"; color:var(--mint); font-family:var(--mono); }
+    details[open] summary::before { content:"−"; }
+    .event-label { display:block; font-weight:620; }
+    .event-actor,.event-time { font-size:12px; color:var(--muted); }
+    .event-time { font-family:var(--mono); }
+    .post { margin:0 0 12px 27px; border-radius:8px; background:#0b161e; padding:11px; white-space:pre-wrap; overflow-wrap:anywhere; font-size:13px; }
+    .post-id { display:block; color:var(--muted); margin-top:9px; font-family:var(--mono); font-size:11px; }
+    .checks { list-style:none; margin:10px 0 20px; padding:0; }
+    .checks li { border-top:1px solid var(--border); padding:10px 0; font-size:14px; }
+    .checks li::before { content:"✓"; margin-right:8px; color:var(--mint); }
+    .status { color:var(--mint); }
+    .status.error { color:var(--coral); }
+    .status[hidden] { display:none; }
+    a { color:var(--mint); text-underline-offset:3px; }
+    code { font-family:var(--mono); }
+    footer { border-top:1px solid var(--border); padding:18px 0 34px; color:var(--muted); font-size:13px; }
+    @media(max-width:850px) { .hero,.review { grid-template-columns:1fr; } .board-grid { max-width:500px; } .integrity { grid-row:1; } }
+    @media(max-width:460px) {
+      header .tag { display:none; }
+      .chart { margin-left:-12px; margin-right:-12px; }
+      .chart svg text { font-size:23px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div class="brand">
+        <svg width="27" height="27" viewBox="0 0 27 27" aria-hidden="true"><rect x="1" y="1" width="25" height="25" rx="5" fill="none" stroke="#83f0c9"/><path d="M5 17h4l3-8 4 10 3-5h3" fill="none" stroke="#83f0c9" stroke-width="1.6"/></svg>
+        BLIND BENCH
+      </div>
+      <span class="tag mono">SWITCH × MATTERMOST / EVIDENCE REVIEW</span>
+    </header>
+    <section class="hero" aria-label="Board comparison">
+      <div>
+        <span class="eyebrow mono">TWO SIMULATED BOARDS / 2 A LOAD</span>
+        <h1>Which board would you ship?</h1>
+        <p class="lead" id="lead">Compare the ripple, then follow the recorded decision in the Switch thread.</p>
+        <div id="boards" class="board-grid" aria-label="Select a rehearsal thread"></div>
+      </div>
+      <div class="panel plot">
+        <div class="row">
+          <h2>Scope comparison</h2>
+          <div class="segment" aria-label="Scope traces">
+            <button type="button" data-scope="both" aria-pressed="true">Overlay</button>
+            <button type="button" data-scope="0" aria-pressed="false">Board A</button>
+            <button type="button" data-scope="1" aria-pressed="false">Board B</button>
+          </div>
+        </div>
+        <div id="scope" class="chart"></div>
+        <div class="legend">
+          <span><i class="dot pass"></i>Board A</span>
+          <span><i class="dot hold"></i>Board B</span>
+          <span>Release limit: ripple below 50 mVpp</span>
+        </div>
+      </div>
+    </section>
+    <div class="review">
+      <section class="panel timeline" aria-labelledby="thread-heading">
+        <div class="panel-heading">
+          <h2 id="thread-heading">Recorded Switch thread</h2>
+          <p id="thread-source" class="source">Choose a board to inspect its messages.</p>
+        </div>
+        <div id="thread"></div>
+      </section>
+      <section class="panel integrity" aria-labelledby="audit-heading">
+        <div class="row">
+          <h2 id="audit-heading">Evidence checks</h2>
+          <button id="verify" type="button" class="recheck">Recheck</button>
+        </div>
+        <p id="status" class="status mono" role="status">Checking the embedded evidence…</p>
+        <ul id="checks" class="checks"></ul>
+        <p><a id="download" download hidden>Download this board’s CSV</a></p>
+        <p class="source">Checks cover the exported rehearsal data. Agent labels follow each message’s role in the workflow.</p>
+      </section>
+    </div>
+    <footer>Recorded in a self-hosted Switch room. Scope samples come from the simulator. The operator account was driven by the rehearsal script. <a href="https://github.com/ShaanGS/blind-bench">Source and setup</a></footer>
+  </main>
+  <noscript>This review uses JavaScript to verify and plot the bundled evidence.</noscript>
+  <script id="evidence" type="application/json">[{"run":{"run":"board-efe204","fixture":"clean","dc_v":4.958,"ripple_mvpp":39.6,"decision":"release","mattermost_thread":"http://localhost:8065/_redirect/pl/96ag3qzpn7rt88k8ithgnxq6to","wrong_thread_blocked":true,"duplicate_measurement_blocked":true,"release_blocked":false,"messages":[{"id":"96ag3qzpn7rt88k8ithgnxq6to","root_id":"","body":"@bb-bench start board-efe204","attachments":[],"posted_at_ms":1794066340295,"author":"operator"},{"id":"fhgronk8i3bh7k7h861q1bcxoo","root_id":"96ag3qzpn7rt88k8ithgnxq6to","body":"@bb-design Baseline [board-efe204] — 4.958 V DC at 2 A. (Simulated)\nDC window: 4.90–5.10 V. Ripple limit: \u003c 50 mVpp.\nFixture commitment: `190ceb8882af7f29357688ea8c2b707f418f60c9e9d53d2e17b50f39b7053ed1`. Which test would you run?","attachments":[],"posted_at_ms":1794066342068,"author":"Switch bridge"},{"id":"rp8icxtezbbtbjw3kf8z35n6da","root_id":"96ag3qzpn7rt88k8ithgnxq6to","body":"@bb-bench Test plan [board-efe204] — scope_ripple\nDC reading is already in spec at 4.958 V, so the open question is the 50 mV peak-to-peak ripple limit, which only a scope measurement can check.","attachments":[],"posted_at_ms":1794066346901,"author":"Switch bridge"},{"id":"mx8nonnphi8bpb4n6ozicpqubr","root_id":"96ag3qzpn7rt88k8ithgnxq6to","body":"**Waiting for operator approval.** Reply in this thread with `@bb-bench run board-efe204`.","attachments":[],"posted_at_ms":1794066347491,"author":"Switch bridge"},{"id":"c891nwkg6pgeuk7km9t3u3z49a","root_id":"96ag3qzpn7rt88k8ithgnxq6to","body":"@bb-bench run board-efe204","attachments":[],"posted_at_ms":1794066349922,"author":"operator"},{"id":"x3j8yt1y4pdq8pqaxpoaxm3fkw","root_id":"96ag3qzpn7rt88k8ithgnxq6to","body":"Simulated scope capture and raw samples [board-efe204]","attachments":["jf9r1x7idtn9bfaf3i6z67oxua","rx1odpuk9pbn5xqb6zciru34me"],"posted_at_ms":1794066352941,"author":"Switch bridge"},{"id":"hhj8m7s39p8cicxca6s5profuh","root_id":"96ag3qzpn7rt88k8ithgnxq6to","body":"@bb-design Scope result [board-efe204] — 39.6 mVpp (simulated).\nFixture reveal: `clean` · nonce `efc907b591972b5474bfcf2c2f15ce93`. The capture and raw samples are attached above.","attachments":[],"posted_at_ms":1794066353395,"author":"Switch bridge"},{"id":"ebc3w7saitr57p9p5a5mcfo1ua","root_id":"96ag3qzpn7rt88k8ithgnxq6to","body":"Recommendation [board-efe204] — **RELEASE**.\nDC passes at 4.958 V. Ripple is **39.6 mVpp**, below the 50 mVpp limit.\nOperator, record your decision here with `@bb-design decide board-efe204 release`.","attachments":[],"posted_at_ms":1794066353772,"author":"Switch bridge"},{"id":"59jgunmccjdqzekrz53dacoy1y","root_id":"96ag3qzpn7rt88k8ithgnxq6to","body":"@bb-design decide board-efe204 release","attachments":[],"posted_at_ms":1794066354482,"author":"operator"},{"id":"ixr7bexyz38q8y4gqpuceyi6cc","root_id":"96ag3qzpn7rt88k8ithgnxq6to","body":"Decision recorded [board-efe204] — **RELEASE** by the operator.\nSimulated evidence: 4.958 V DC · 39.6 mVpp · limit \u003c 50 mVpp.","attachments":[],"posted_at_ms":1794066355586,"author":"Switch bridge"},{"id":"g4w7mfbrbprgbcrt51r87n3axc","root_id":"96ag3qzpn7rt88k8ithgnxq6to","body":"@bb-bench run board-efe204","attachments":[],"posted_at_ms":1794066356365,"author":"operator"},{"id":"54aaescc53yfprcmnuqxndn1wc","root_id":"96ag3qzpn7rt88k8ithgnxq6to","body":"Test blocked [board-efe204] — approve from the run thread after the plan appears.","attachments":[],"posted_at_ms":1794066357398,"author":"Switch bridge"}]},"csv":"time_us,voltage_v\n0.000000,4.958000000\n0.781250,4.961862788\n1.562500,4.965577132\n2.343750,4.969000291\n3.125000,4.972000714\n3.906250,4.974463098\n4.687500,4.976292815\n5.468750,4.977419549\n6.250000,4.977800000\n7.031250,4.977419549\n7.812500,4.976292815\n8.593750,4.974463098\n9.375000,4.972000714\n10.156250,4.969000291\n10.937500,4.965577132\n11.718750,4.961862788\n12.500000,4.958000000\n13.281250,4.954137212\n14.062500,4.950422868\n14.843750,4.946999709\n15.625000,4.943999286\n16.406250,4.941536902\n17.187500,4.939707185\n17.968750,4.938580451\n18.750000,4.938200000\n19.531250,4.938580451\n20.312500,4.939707185\n21.093750,4.941536902\n21.875000,4.943999286\n22.656250,4.946999709\n23.437500,4.950422868\n24.218750,4.954137212\n25.000000,4.958000000\n25.781250,4.961862788\n26.562500,4.965577132\n27.343750,4.969000291\n28.125000,4.972000714\n28.906250,4.974463098\n29.687500,4.976292815\n30.468750,4.977419549\n31.250000,4.977800000\n32.031250,4.977419549\n32.812500,4.976292815\n33.593750,4.974463098\n34.375000,4.972000714\n35.156250,4.969000291\n35.937500,4.965577132\n36.718750,4.961862788\n37.500000,4.958000000\n38.281250,4.954137212\n39.062500,4.950422868\n39.843750,4.946999709\n40.625000,4.943999286\n41.406250,4.941536902\n42.187500,4.939707185\n42.968750,4.938580451\n43.750000,4.938200000\n44.531250,4.938580451\n45.312500,4.939707185\n46.093750,4.941536902\n46.875000,4.943999286\n47.656250,4.946999709\n48.437500,4.950422868\n49.218750,4.954137212\n50.000000,4.958000000\n50.781250,4.961862788\n51.562500,4.965577132\n52.343750,4.969000291\n53.125000,4.972000714\n53.906250,4.974463098\n54.687500,4.976292815\n55.468750,4.977419549\n56.250000,4.977800000\n57.031250,4.977419549\n57.812500,4.976292815\n58.593750,4.974463098\n59.375000,4.972000714\n60.156250,4.969000291\n60.937500,4.965577132\n61.718750,4.961862788\n62.500000,4.958000000\n63.281250,4.954137212\n64.062500,4.950422868\n64.843750,4.946999709\n65.625000,4.943999286\n66.406250,4.941536902\n67.187500,4.939707185\n67.968750,4.938580451\n68.750000,4.938200000\n69.531250,4.938580451\n70.312500,4.939707185\n71.093750,4.941536902\n71.875000,4.943999286\n72.656250,4.946999709\n73.437500,4.950422868\n74.218750,4.954137212\n75.000000,4.958000000\n75.781250,4.961862788\n76.562500,4.965577132\n77.343750,4.969000291\n78.125000,4.972000714\n78.906250,4.974463098\n79.687500,4.976292815\n80.468750,4.977419549\n81.250000,4.977800000\n82.031250,4.977419549\n82.812500,4.976292815\n83.593750,4.974463098\n84.375000,4.972000714\n85.156250,4.969000291\n85.937500,4.965577132\n86.718750,4.961862788\n87.500000,4.958000000\n88.281250,4.954137212\n89.062500,4.950422868\n89.843750,4.946999709\n90.625000,4.943999286\n91.406250,4.941536902\n92.187500,4.939707185\n92.968750,4.938580451\n93.750000,4.938200000\n94.531250,4.938580451\n95.312500,4.939707185\n96.093750,4.941536902\n96.875000,4.943999286\n97.656250,4.946999709\n98.437500,4.950422868\n99.218750,4.954137212\n100.000000,4.958000000\n100.781250,4.961862788\n101.562500,4.965577132\n102.343750,4.969000291\n103.125000,4.972000714\n103.906250,4.974463098\n104.687500,4.976292815\n105.468750,4.977419549\n106.250000,4.977800000\n107.031250,4.977419549\n107.812500,4.976292815\n108.593750,4.974463098\n109.375000,4.972000714\n110.156250,4.969000291\n110.937500,4.965577132\n111.718750,4.961862788\n112.500000,4.958000000\n113.281250,4.954137212\n114.062500,4.950422868\n114.843750,4.946999709\n115.625000,4.943999286\n116.406250,4.941536902\n117.187500,4.939707185\n117.968750,4.938580451\n118.750000,4.938200000\n119.531250,4.938580451\n120.312500,4.939707185\n121.093750,4.941536902\n121.875000,4.943999286\n122.656250,4.946999709\n123.437500,4.950422868\n124.218750,4.954137212\n125.000000,4.958000000\n125.781250,4.961862788\n126.562500,4.965577132\n127.343750,4.969000291\n128.125000,4.972000714\n128.906250,4.974463098\n129.687500,4.976292815\n130.468750,4.977419549\n131.250000,4.977800000\n132.031250,4.977419549\n132.812500,4.976292815\n133.593750,4.974463098\n134.375000,4.972000714\n135.156250,4.969000291\n135.937500,4.965577132\n136.718750,4.961862788\n137.500000,4.958000000\n138.281250,4.954137212\n139.062500,4.950422868\n139.843750,4.946999709\n140.625000,4.943999286\n141.406250,4.941536902\n142.187500,4.939707185\n142.968750,4.938580451\n143.750000,4.938200000\n144.531250,4.938580451\n145.312500,4.939707185\n146.093750,4.941536902\n146.875000,4.943999286\n147.656250,4.946999709\n148.437500,4.950422868\n149.218750,4.954137212\n150.000000,4.958000000\n150.781250,4.961862788\n151.562500,4.965577132\n152.343750,4.969000291\n153.125000,4.972000714\n153.906250,4.974463098\n154.687500,4.976292815\n155.468750,4.977419549\n156.250000,4.977800000\n157.031250,4.977419549\n157.812500,4.976292815\n158.593750,4.974463098\n159.375000,4.972000714\n160.156250,4.969000291\n160.937500,4.965577132\n161.718750,4.961862788\n162.500000,4.958000000\n163.281250,4.954137212\n164.062500,4.950422868\n164.843750,4.946999709\n165.625000,4.943999286\n166.406250,4.941536902\n167.187500,4.939707185\n167.968750,4.938580451\n168.750000,4.938200000\n169.531250,4.938580451\n170.312500,4.939707185\n171.093750,4.941536902\n171.875000,4.943999286\n172.656250,4.946999709\n173.437500,4.950422868\n174.218750,4.954137212\n175.000000,4.958000000\n175.781250,4.961862788\n176.562500,4.965577132\n177.343750,4.969000291\n178.125000,4.972000714\n178.906250,4.974463098\n179.687500,4.976292815\n180.468750,4.977419549\n181.250000,4.977800000\n182.031250,4.977419549\n182.812500,4.976292815\n183.593750,4.974463098\n184.375000,4.972000714\n185.156250,4.969000291\n185.937500,4.965577132\n186.718750,4.961862788\n187.500000,4.958000000\n188.281250,4.954137212\n189.062500,4.950422868\n189.843750,4.946999709\n190.625000,4.943999286\n191.406250,4.941536902\n192.187500,4.939707185\n192.968750,4.938580451\n193.750000,4.938200000\n194.531250,4.938580451\n195.312500,4.939707185\n196.093750,4.941536902\n196.875000,4.943999286\n197.656250,4.946999709\n198.437500,4.950422868\n199.218750,4.954137212\n"},{"run":{"run":"board-96db35","fixture":"noisy","dc_v":4.958,"ripple_mvpp":132,"decision":"hold","mattermost_thread":"http://localhost:8065/_redirect/pl/8cmzbzprt7gwdpw3qie3ozbm4r","wrong_thread_blocked":true,"duplicate_measurement_blocked":true,"release_blocked":true,"messages":[{"id":"8cmzbzprt7gwdpw3qie3ozbm4r","root_id":"","body":"@bb-bench start board-96db35","attachments":[],"posted_at_ms":1794066358314,"author":"operator"},{"id":"u4td9h6it3gwxpoh3kw6sj9b8a","root_id":"8cmzbzprt7gwdpw3qie3ozbm4r","body":"@bb-design Baseline [board-96db35] — 4.958 V DC at 2 A. (Simulated)\nDC window: 4.90–5.10 V. Ripple limit: \u003c 50 mVpp.\nFixture commitment: `01aac1032538084a04b1cc40b1b9799e2d92a977b0b78f56fd97c22fa45ccde6`. Which test would you run?","attachments":[],"posted_at_ms":1794066359797,"author":"Switch bridge"},{"id":"y4rkufs8iig59n1bm3hymiz8zh","root_id":"8cmzbzprt7gwdpw3qie3ozbm4r","body":"@bb-bench Test plan [board-96db35] — scope_ripple\nDC is already in spec at 4.958 V, so the open question is the 50 mV peak-to-peak ripple limit, which only a scope measurement can answer.","attachments":[],"posted_at_ms":1794066364284,"author":"Switch bridge"},{"id":"x7b99d6fe3bzj8kyb7ijzur96a","root_id":"8cmzbzprt7gwdpw3qie3ozbm4r","body":"**Waiting for operator approval.** Reply in this thread with `@bb-bench run board-96db35`.","attachments":[],"posted_at_ms":1794066364855,"author":"Switch bridge"},{"id":"hcr633pn8jf99ez76ek1nmid5y","root_id":"8cmzbzprt7gwdpw3qie3ozbm4r","body":"@bb-bench run board-96db35","attachments":[],"posted_at_ms":1794066366951,"author":"operator"},{"id":"qayyekws9fr4ddes49msxm7mkw","root_id":"8cmzbzprt7gwdpw3qie3ozbm4r","body":"Simulated scope capture and raw samples [board-96db35]","attachments":["789q3iicc3bkze1fakiq7shw5y","jkb1nf9h8fy35g6sobfk147n6o"],"posted_at_ms":1794066369754,"author":"Switch bridge"},{"id":"3bpifrjs3ibt9x8c9h4n4aqdcc","root_id":"8cmzbzprt7gwdpw3qie3ozbm4r","body":"@bb-design Scope result [board-96db35] — 132 mVpp (simulated).\nFixture reveal: `noisy` · nonce `b5a7a4f733ce39a64648c84ed557265c`. The capture and raw samples are attached above.","attachments":[],"posted_at_ms":1794066370011,"author":"Switch bridge"},{"id":"hwrc1k5zs7f65euyc85btrohnr","root_id":"8cmzbzprt7gwdpw3qie3ozbm4r","body":"Recommendation [board-96db35] — **HOLD**.\nDC passes at 4.958 V. Ripple is **132 mVpp**, at or above the 50 mVpp limit.\nOperator, record your decision here with `@bb-design decide board-96db35 hold`.","attachments":[],"posted_at_ms":1794066370243,"author":"Switch bridge"},{"id":"w6tydpkxui895k35p1n4qp9tkc","root_id":"8cmzbzprt7gwdpw3qie3ozbm4r","body":"@bb-design decide board-96db35 release","attachments":[],"posted_at_ms":1794066370687,"author":"operator"},{"id":"aotinc58ijfu3bwimxqtxxcahc","root_id":"8cmzbzprt7gwdpw3qie3ozbm4r","body":"Release blocked [board-96db35] — the board failed the ripple limit.","attachments":[],"posted_at_ms":1794066371901,"author":"Switch bridge"},{"id":"9zq1qgs4gjymij65ywzgyz5g6h","root_id":"8cmzbzprt7gwdpw3qie3ozbm4r","body":"@bb-design decide board-96db35 hold","attachments":[],"posted_at_ms":1794066372566,"author":"operator"},{"id":"u9i5t933b7gq7dobqn3hdby9yh","root_id":"8cmzbzprt7gwdpw3qie3ozbm4r","body":"Decision recorded [board-96db35] — **HOLD** by the operator.\nSimulated evidence: 4.958 V DC · 132 mVpp · limit \u003c 50 mVpp.","attachments":[],"posted_at_ms":1794066373536,"author":"Switch bridge"},{"id":"teyukxfy1fgnbpsmk8k6x6hnpc","root_id":"8cmzbzprt7gwdpw3qie3ozbm4r","body":"@bb-bench run board-96db35","attachments":[],"posted_at_ms":1794066373583,"author":"operator"},{"id":"ufyo1awwc3dpxx5bjk4re3tjry","root_id":"8cmzbzprt7gwdpw3qie3ozbm4r","body":"Test blocked [board-96db35] — approve from the run thread after the plan appears.","attachments":[],"posted_at_ms":1794066374673,"author":"Switch bridge"}]},"csv":"time_us,voltage_v\n0.000000,4.958000000\n0.781250,4.970875961\n1.562500,4.983257107\n2.343750,4.994667635\n3.125000,5.004669048\n3.906250,5.012876994\n4.687500,5.018976049\n5.468750,5.022731829\n6.250000,5.024000000\n7.031250,5.022731829\n7.812500,5.018976049\n8.593750,5.012876994\n9.375000,5.004669048\n10.156250,4.994667635\n10.937500,4.983257107\n11.718750,4.970875961\n12.500000,4.958000000\n13.281250,4.945124039\n14.062500,4.932742893\n14.843750,4.921332365\n15.625000,4.911330952\n16.406250,4.903123006\n17.187500,4.897023951\n17.968750,4.893268171\n18.750000,4.892000000\n19.531250,4.893268171\n20.312500,4.897023951\n21.093750,4.903123006\n21.875000,4.911330952\n22.656250,4.921332365\n23.437500,4.932742893\n24.218750,4.945124039\n25.000000,4.958000000\n25.781250,4.970875961\n26.562500,4.983257107\n27.343750,4.994667635\n28.125000,5.004669048\n28.906250,5.012876994\n29.687500,5.018976049\n30.468750,5.022731829\n31.250000,5.024000000\n32.031250,5.022731829\n32.812500,5.018976049\n33.593750,5.012876994\n34.375000,5.004669048\n35.156250,4.994667635\n35.937500,4.983257107\n36.718750,4.970875961\n37.500000,4.958000000\n38.281250,4.945124039\n39.062500,4.932742893\n39.843750,4.921332365\n40.625000,4.911330952\n41.406250,4.903123006\n42.187500,4.897023951\n42.968750,4.893268171\n43.750000,4.892000000\n44.531250,4.893268171\n45.312500,4.897023951\n46.093750,4.903123006\n46.875000,4.911330952\n47.656250,4.921332365\n48.437500,4.932742893\n49.218750,4.945124039\n50.000000,4.958000000\n50.781250,4.970875961\n51.562500,4.983257107\n52.343750,4.994667635\n53.125000,5.004669048\n53.906250,5.012876994\n54.687500,5.018976049\n55.468750,5.022731829\n56.250000,5.024000000\n57.031250,5.022731829\n57.812500,5.018976049\n58.593750,5.012876994\n59.375000,5.004669048\n60.156250,4.994667635\n60.937500,4.983257107\n61.718750,4.970875961\n62.500000,4.958000000\n63.281250,4.945124039\n64.062500,4.932742893\n64.843750,4.921332365\n65.625000,4.911330952\n66.406250,4.903123006\n67.187500,4.897023951\n67.968750,4.893268171\n68.750000,4.892000000\n69.531250,4.893268171\n70.312500,4.897023951\n71.093750,4.903123006\n71.875000,4.911330952\n72.656250,4.921332365\n73.437500,4.932742893\n74.218750,4.945124039\n75.000000,4.958000000\n75.781250,4.970875961\n76.562500,4.983257107\n77.343750,4.994667635\n78.125000,5.004669048\n78.906250,5.012876994\n79.687500,5.018976049\n80.468750,5.022731829\n81.250000,5.024000000\n82.031250,5.022731829\n82.812500,5.018976049\n83.593750,5.012876994\n84.375000,5.004669048\n85.156250,4.994667635\n85.937500,4.983257107\n86.718750,4.970875961\n87.500000,4.958000000\n88.281250,4.945124039\n89.062500,4.932742893\n89.843750,4.921332365\n90.625000,4.911330952\n91.406250,4.903123006\n92.187500,4.897023951\n92.968750,4.893268171\n93.750000,4.892000000\n94.531250,4.893268171\n95.312500,4.897023951\n96.093750,4.903123006\n96.875000,4.911330952\n97.656250,4.921332365\n98.437500,4.932742893\n99.218750,4.945124039\n100.000000,4.958000000\n100.781250,4.970875961\n101.562500,4.983257107\n102.343750,4.994667635\n103.125000,5.004669048\n103.906250,5.012876994\n104.687500,5.018976049\n105.468750,5.022731829\n106.250000,5.024000000\n107.031250,5.022731829\n107.812500,5.018976049\n108.593750,5.012876994\n109.375000,5.004669048\n110.156250,4.994667635\n110.937500,4.983257107\n111.718750,4.970875961\n112.500000,4.958000000\n113.281250,4.945124039\n114.062500,4.932742893\n114.843750,4.921332365\n115.625000,4.911330952\n116.406250,4.903123006\n117.187500,4.897023951\n117.968750,4.893268171\n118.750000,4.892000000\n119.531250,4.893268171\n120.312500,4.897023951\n121.093750,4.903123006\n121.875000,4.911330952\n122.656250,4.921332365\n123.437500,4.932742893\n124.218750,4.945124039\n125.000000,4.958000000\n125.781250,4.970875961\n126.562500,4.983257107\n127.343750,4.994667635\n128.125000,5.004669048\n128.906250,5.012876994\n129.687500,5.018976049\n130.468750,5.022731829\n131.250000,5.024000000\n132.031250,5.022731829\n132.812500,5.018976049\n133.593750,5.012876994\n134.375000,5.004669048\n135.156250,4.994667635\n135.937500,4.983257107\n136.718750,4.970875961\n137.500000,4.958000000\n138.281250,4.945124039\n139.062500,4.932742893\n139.843750,4.921332365\n140.625000,4.911330952\n141.406250,4.903123006\n142.187500,4.897023951\n142.968750,4.893268171\n143.750000,4.892000000\n144.531250,4.893268171\n145.312500,4.897023951\n146.093750,4.903123006\n146.875000,4.911330952\n147.656250,4.921332365\n148.437500,4.932742893\n149.218750,4.945124039\n150.000000,4.958000000\n150.781250,4.970875961\n151.562500,4.983257107\n152.343750,4.994667635\n153.125000,5.004669048\n153.906250,5.012876994\n154.687500,5.018976049\n155.468750,5.022731829\n156.250000,5.024000000\n157.031250,5.022731829\n157.812500,5.018976049\n158.593750,5.012876994\n159.375000,5.004669048\n160.156250,4.994667635\n160.937500,4.983257107\n161.718750,4.970875961\n162.500000,4.958000000\n163.281250,4.945124039\n164.062500,4.932742893\n164.843750,4.921332365\n165.625000,4.911330952\n166.406250,4.903123006\n167.187500,4.897023951\n167.968750,4.893268171\n168.750000,4.892000000\n169.531250,4.893268171\n170.312500,4.897023951\n171.093750,4.903123006\n171.875000,4.911330952\n172.656250,4.921332365\n173.437500,4.932742893\n174.218750,4.945124039\n175.000000,4.958000000\n175.781250,4.970875961\n176.562500,4.983257107\n177.343750,4.994667635\n178.125000,5.004669048\n178.906250,5.012876994\n179.687500,5.018976049\n180.468750,5.022731829\n181.250000,5.024000000\n182.031250,5.022731829\n182.812500,5.018976049\n183.593750,5.012876994\n184.375000,5.004669048\n185.156250,4.994667635\n185.937500,4.983257107\n186.718750,4.970875961\n187.500000,4.958000000\n188.281250,4.945124039\n189.062500,4.932742893\n189.843750,4.921332365\n190.625000,4.911330952\n191.406250,4.903123006\n192.187500,4.897023951\n192.968750,4.893268171\n193.750000,4.892000000\n194.531250,4.893268171\n195.312500,4.897023951\n196.093750,4.903123006\n196.875000,4.911330952\n197.656250,4.921332365\n198.437500,4.932742893\n199.218750,4.945124039\n"}]</script>
+  <script type="module">export const LIMIT_MVPP = 50;
+const NANOVOLTS_PER_MV = 1_000_000;
+const DC_MIN_NV = 4_900_000_000;
+const DC_MAX_NV = 5_100_000_000;
+
+function requireCheck(condition, message) {
+  if (!condition) throw new Error(message);
+}
+
+export function measureCsv(csv) {
+  const [header, ...rows] = csv.trimEnd().split(/\r?\n/);
+  requireCheck(header === "time_us,voltage_v" && rows.length === 256, "Expected 256 scope samples");
+  let previousTime = -1;
+  const samples = rows.map((row) => {
+    const match = /^(\d+\.\d{6}),(\d+)\.(\d{9})$/.exec(row);
+    requireCheck(match, "Invalid scope sample");
+    const time = Number(match[1]);
+    const voltage = Number(match[2]) * 1_000_000_000 + Number(match[3]);
+    requireCheck(time > previousTime && Number.isSafeInteger(voltage) && voltage <= 10_000_000_000,
+      "Samples must have increasing timestamps and valid voltages");
+    previousTime = time;
+    return [time, voltage];
+  });
+  const voltages = samples.map((sample) => sample[1]);
+  const mean = voltages.reduce((total, value) => total + value, 0) / voltages.length;
+  const ripple = Math.max(...voltages) - Math.min(...voltages);
+  return {
+    dc: Math.round(mean / 1_000_000) / 1_000,
+    ripple: ripple / NANOVOLTS_PER_MV,
+    decision: mean >= DC_MIN_NV && mean <= DC_MAX_NV && ripple < LIMIT_MVPP * NANOVOLTS_PER_MV
+      ? "release" : "hold",
+    points: samples.map(([time, voltage]) => [time, (voltage - mean) / NANOVOLTS_PER_MV]),
+  };
+}
+
+export async function auditRun(run, csv, hash) {
+  const id = run.run;
+  const measurements = measureCsv(csv);
+  const messages = run.messages;
+  const root = messages[0];
+  requireCheck(/^[a-z0-9-]{1,32}$/.test(id) && root?.id && root.root_id === "", "Invalid thread root");
+  requireCheck(new Set(messages.map((post) => post.id)).size === messages.length, "Duplicate post ID");
+  requireCheck(messages.every((post, index) => Number.isSafeInteger(post.posted_at_ms) &&
+    (!index || (post.root_id === root.id && post.posted_at_ms >= messages[index - 1].posted_at_ms))),
+  "Thread membership or post order is invalid");
+  requireCheck(measurements.dc === run.dc_v &&
+    Math.round(measurements.ripple * 10) / 10 === run.ripple_mvpp,
+  "Raw scope samples disagree with the recorded measurements");
+  requireCheck(measurements.decision === run.decision, "Recorded decision disagrees with the release limits");
+
+  const stages = [];
+  let cursor = -1;
+  function stage(label, actor, text, exact = false) {
+    const author = actor === "Operator" ? "operator" : "Switch bridge";
+    const index = messages.findIndex((post, i) => i > cursor && post.author === author &&
+      (exact ? post.body === text : post.body.startsWith(text)));
+    requireCheck(index !== -1, "Missing or out of order: " + label);
+    cursor = index;
+    const post = messages[index];
+    stages.push({ label, actor, post });
+    return post;
+  }
+
+  stage("Start board review", "Operator", "@bb-bench start " + id, true);
+  const baseline = stage("Commit the fixture", "Bench agent",
+    "@bb-design Baseline [" + id + "] — " + measurements.dc.toFixed(3) + " V DC at 2 A. (Simulated)");
+  stage("Choose the scope test", "Design agent", "@bb-bench Test plan [" + id + "] — scope_ripple\n");
+  stage("Ask for approval", "Bench agent", "**Waiting for operator approval.**");
+  stage("Approve the measurement", "Operator", "@bb-bench run " + id, true);
+  const capture = stage("Attach scope and samples", "Bench agent", "Simulated scope capture and raw samples [" + id + "]");
+  requireCheck(capture.attachments.length === 2 &&
+    messages.filter((post) => post.attachments.length).length === 1, "Unexpected scope attachments");
+  const result = stage("Reveal the fixture", "Bench agent",
+    "@bb-design Scope result [" + id + "] — " + run.ripple_mvpp + " mVpp (simulated).");
+  const committed = /Fixture commitment: \x60([0-9a-f]{64})\x60/.exec(baseline.body);
+  const revealed = /Fixture reveal: \x60(clean|noisy)\x60 · nonce \x60([0-9a-f]{32})\x60/.exec(result.body);
+  requireCheck(committed && revealed && revealed[1] === run.fixture, "Missing fixture commitment or reveal");
+  requireCheck(committed[1] === await hash([id, revealed[1], revealed[2]].join(":")),
+    "Fixture reveal does not match the original commitment");
+
+  const decision = run.decision.toUpperCase();
+  stage("Recommend " + decision, "Design agent", "Recommendation [" + id + "] — **" + decision + "**.");
+  if (run.decision === "hold") {
+    stage("Attempt release", "Operator", "@bb-design decide " + id + " release", true);
+    stage("Block release", "Design agent", "Release blocked [" + id + "]");
+  }
+  stage("Confirm " + decision, "Operator", "@bb-design decide " + id + " " + run.decision, true);
+  stage("Record " + decision, "Design agent", "Decision recorded [" + id + "] — **" + decision + "**");
+  stage("Repeat measurement", "Operator", "@bb-bench run " + id, true);
+  stage("Block repeat", "Bench agent", "Test blocked [" + id + "]");
+  requireCheck(stages.length === messages.length, "Unexpected messages in the recorded review");
+  return { ...measurements, stages, commitment: committed[1], nonce: revealed[2] };
+}
+
+const colors = ["#83f0c9", "#ff9a7a"];
+const font = 'font-family="Consolas, monospace"';
+
+export function scopeSvg(reports, selected = "both") {
+  const width = 940;
+  const height = 348;
+  const left = 74;
+  const right = 909;
+  const top = 43;
+  const bottom = 290;
+  const x = (time) => left + time / 100 * (right - left);
+  const y = (voltage) => (top + bottom) / 2 - voltage / 160 * (bottom - top);
+  const vertical = Array.from({ length: 11 }, (_, index) => {
+    const time = index * 10;
+    return '<path d="M' + x(time) + ' ' + top + 'V' + bottom + '" stroke="#233541"/>' +
+      (index % 2 ? "" : '<text x="' + x(time) + '" y="315" text-anchor="middle">' + time + "</text>");
+  });
+  const horizontal = Array.from({ length: 9 }, (_, index) => {
+    const voltage = 80 - index * 20;
+    const line = y(voltage);
+    return '<path d="M' + left + ' ' + line + 'H' + right + '" stroke="' +
+      (voltage ? "#233541" : "#526676") + '"/><text x="58" y="' + (line + 5) +
+      '" text-anchor="end">' + voltage + "</text>";
+  });
+  const traces = reports.map((report, index) => {
+    if (selected !== "both" && selected !== String(index)) return "";
+    const points = report.points.filter(([time]) => time <= 100)
+      .map(([time, voltage]) => x(time).toFixed(2) + "," + y(voltage).toFixed(2)).join(" ");
+    return '<polyline points="' + points + '" fill="none" stroke="' + colors[index] +
+      '" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>';
+  });
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + width + ' ' + height +
+    '" role="img" aria-label="Scope ripple from the recorded samples on a common vertical scale">' +
+    '<g ' + font + ' font-size="15" fill="#a6b8c2">' +
+    '<rect x="' + left + '" y="' + y(25) + '" width="' + (right - left) +
+    '" height="' + (y(-25) - y(25)) + '" fill="#17313c"/>' +
+    vertical.join("") + horizontal.join("") + traces.join("") +
+    '<text x="74" y="24">RIPPLE (mV)</text><text x="909" y="24" text-anchor="end">' +
+    'SHADED BAND: ±25 mV</text><text x="909" y="340" text-anchor="end">TIME (µs)</text></g></svg>';
+}
+
+export function overviewSvg(reports) {
+  const traces = scopeSvg(reports).replace("<svg ", '<svg x="36" y="144" width="928" height="343" ');
+  return [
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 574" role="img" aria-label="Both boards read 4.958 volts. Board A releases at 39.6 millivolts peak-to-peak and Board B holds at 132.">',
+    '<rect width="1000" height="574" rx="18" fill="#0b151d"/>',
+    '<rect x="1" y="1" width="998" height="572" rx="18" fill="none" stroke="#29424f" stroke-width="2"/>',
+    '<g fill="#91a8b6" font-family="Consolas,monospace" font-size="17">',
+    '<text x="46" y="40">BLIND BENCH</text><text x="954" y="40" text-anchor="end">SWITCH × MATTERMOST / SIMULATED</text></g>',
+    '<text x="46" y="104" fill="#edf6f4" font-family="Segoe UI,system-ui,sans-serif" font-weight="700" font-size="44">Both boards read ' +
+      reports[0].dc.toFixed(3) + ' V.</text>',
+    '<text x="46" y="134" fill="#a6b8c2" ' + font + ' font-size="17">Same 2 A load. Ripple limit: below 50 mVpp.</text>',
+    traces,
+    ...reports.map((report, index) => {
+      const offset = index ? 514 : 46;
+      return '<rect x="' + offset + '" y="502" width="440" height="43" rx="8" fill="#132630"/>' +
+        '<text x="' + (offset + 17) + '" y="529" fill="' + colors[index] + '" ' + font +
+        ' font-size="19">BOARD ' + ("AB"[index]) + ' · ' + report.ripple.toFixed(1).replace(/\.0$/, "") +
+        ' mVpp · ' + report.decision.toUpperCase() + '</text>';
+    }),
+    "</svg>\n",
+  ].join("\n");
+}
+
+const get = (id) => document.getElementById(id);
+const packetData = JSON.parse(get("evidence").textContent);
+const scopeButtons = [...document.querySelectorAll("[data-scope]")];
+const boardName = (index) => "Board " + "AB"[index];
+let verifiedReports = [];
+let activeBoard = 1;
+let scopeSelection = "both";
+
+async function sha256(value) {
+  if (!globalThis.crypto?.subtle) throw new Error("Open this file in a browser with Web Crypto support.");
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function element(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+function renderScope() {
+  get("scope").innerHTML = scopeSvg(verifiedReports, scopeSelection);
+  for (const button of scopeButtons) {
+    button.setAttribute("aria-pressed", String(button.dataset.scope === scopeSelection));
+  }
+}
+
+function renderThread() {
+  const { run, csv } = packetData[activeBoard];
+  const report = verifiedReports[activeBoard];
+  [...get("boards").children].forEach((button, index) => {
+    button.setAttribute("aria-pressed", String(index === activeBoard));
+  });
+  get("thread-heading").textContent = boardName(activeBoard) + " · Switch thread";
+  get("thread-source").textContent = run.run + " · " + report.stages.length + " captured posts";
+  const started = report.stages[0].post.posted_at_ms;
+  get("thread").replaceChildren(...report.stages.map(({ label, actor, post }) => {
+    const details = element("details", "event");
+    const summary = element("summary");
+    const title = element("span");
+    title.append(element("span", "event-label", label), element("span", "event-actor", actor));
+    const elapsed = "+" + ((post.posted_at_ms - started) / 1000).toFixed(1) + " s";
+    summary.append(title, element("span", "event-time", elapsed));
+    const body = element("div", "post", post.body);
+    body.append(element("span", "post-id", "Mattermost post " + post.id));
+    details.append(summary, body);
+    return details;
+  }));
+  get("checks").replaceChildren(...[
+    "DC and ripple match 256 raw samples.",
+    "Fixture reveal matches the SHA-256 commitment.",
+    "Scope selection and operator approval precede the attachment.",
+    report.decision === "hold"
+      ? "Release attempt was blocked before the operator recorded HOLD."
+      : "The operator recorded RELEASE after the scope result.",
+    "Repeat measurement was blocked in the recorded thread.",
+  ].map((check) => element("li", "", check)));
+  const download = get("download");
+  download.href = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
+  download.download = run.run + "-samples.csv";
+  download.hidden = false;
+}
+
+async function verify() {
+  const status = get("status");
+  const button = get("verify");
+  button.disabled = true;
+  status.className = "status mono";
+  status.textContent = "Checking the embedded evidence…";
+  try {
+    verifiedReports = await Promise.all(packetData.map(({ run, csv }) => auditRun(run, csv, sha256)));
+    get("lead").textContent = "Both read " + verifiedReports[0].dc.toFixed(3) +
+      " V DC. One fails the ripple limit. Compare the scope traces and inspect what happened in chat.";
+    if (!get("boards").children.length) {
+      get("boards").replaceChildren(...verifiedReports.map((report, index) => {
+        const board = element("button", "board " + (index === 0 ? "pass" : "hold"));
+        board.type = "button";
+        board.append(element("span", "mono tag", boardName(index).toUpperCase()),
+          element("span", "number", String(report.ripple)),
+          element("span", "unit", "mVpp"), element("span", "mono verdict", report.decision.toUpperCase()));
+        board.addEventListener("click", () => {
+          activeBoard = index;
+          renderThread();
+          get("thread-heading").scrollIntoView({ block: "nearest" });
+        });
+        return board;
+      }));
+    }
+    renderScope();
+    renderThread();
+    status.textContent = "Both recorded runs verified";
+  } catch (error) {
+    status.className = "status mono error";
+    status.textContent = "Evidence check failed: " + error.message;
+  } finally {
+    button.disabled = false;
+  }
+}
+
+for (const button of scopeButtons) {
+  button.addEventListener("click", () => {
+    if (!verifiedReports.length) return;
+    scopeSelection = button.dataset.scope;
+    renderScope();
+  });
+}
+get("verify").addEventListener("click", verify);
+await verify();
+</script>
+</body>
+</html>
